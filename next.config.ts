@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
+  serverExternalPackages: ["@prisma/adapter-pg", "pg", "better-auth"],
 };
 
 export default nextConfig;
