@@ -13,15 +13,19 @@ datasource db {
 }
 
 model User {
-  id            String    @id
+  id            String       @id
   name          String
   email         String
-  emailVerified Boolean   @default(false)
+  emailVerified Boolean      @default(false)
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  role          Role         @default(STUDENT)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
   sessions      Session[]
   accounts      Account[]
+  datasets      Dataset[]
+  problems      Problem[]
+  submissions   Submission[]
 
   @@unique([email])
   @@map("user")
@@ -73,4 +77,67 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+enum Role {
+  STUDENT
+  INSTRUCTOR
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model Dataset {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  seedSql     String
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  problems    Problem[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([authorId])
+  @@map("dataset")
+}
+
+model Problem {
+  id            String       @id @default(cuid())
+  title         String
+  prompt        String
+  solutionQuery String
+  orderMatters  Boolean      @default(false)
+  difficulty    Difficulty   @default(EASY)
+  datasetId     String
+  dataset       Dataset      @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  authorId      String
+  author        User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  submissions   Submission[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([datasetId])
+  @@index([authorId])
+  @@map("problem")
+}
+
+model Submission {
+  id         String   @id @default(cuid())
+  query      String
+  passed     Boolean
+  score      Int      @default(0)
+  resultDiff Json?
+  problemId  String
+  problem    Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@index([problemId])
+  @@index([userId])
+  @@map("submission")
 }
