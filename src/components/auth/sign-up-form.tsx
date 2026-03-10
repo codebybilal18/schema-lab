@@ -6,9 +6,11 @@ import Link from "next/link";
 import { toast } from "sonner";
 
 import { signUp } from "@/lib/auth-client";
+import { updateUserRole } from "@/lib/actions/user";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Card,
   CardContent,
@@ -18,9 +20,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+const ROLES = [
+  {
+    value: "STUDENT",
+    title: "Student",
+    description: "Solve problems and practice SQL",
+  },
+  {
+    value: "INSTRUCTOR",
+    title: "Instructor",
+    description: "Create datasets and author problems",
+  },
+] as const;
+
 export function SignUpForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [role, setRole] = useState<string>("STUDENT");
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -31,13 +47,22 @@ export function SignUpForm() {
 
     setIsLoading(true);
     const { error } = await signUp.email({ name, email, password });
-    setIsLoading(false);
 
     if (error) {
+      setIsLoading(false);
       toast.error(error.message ?? "Could not create account");
       return;
     }
 
+    if (role === "INSTRUCTOR") {
+      try {
+        await updateUserRole("INSTRUCTOR");
+      } catch {
+        toast.error("Account created, but we could not set the instructor role");
+      }
+    }
+
+    setIsLoading(false);
     router.push("/dashboard");
     router.refresh();
   }
@@ -82,6 +107,32 @@ export function SignUpForm() {
               minLength={8}
               required
             />
+          </div>
+          <div className="space-y-2">
+            <Label>I am joining as</Label>
+            <RadioGroup value={role} onValueChange={(value) => setRole(String(value))}>
+              {ROLES.map((option) => (
+                <Label
+                  key={option.value}
+                  htmlFor={`role-${option.value}`}
+                  className="hover:bg-muted/50 flex cursor-pointer items-start gap-3 rounded-lg border p-3 has-data-checked:border-primary"
+                >
+                  <RadioGroupItem
+                    id={`role-${option.value}`}
+                    value={option.value}
+                    className="mt-0.5"
+                  />
+                  <span className="space-y-0.5">
+                    <span className="block text-sm font-medium">
+                      {option.title}
+                    </span>
+                    <span className="text-muted-foreground block text-xs">
+                      {option.description}
+                    </span>
+                  </span>
+                </Label>
+              ))}
+            </RadioGroup>
           </div>
         </CardContent>
         <CardFooter className="mt-6 flex flex-col gap-4">
