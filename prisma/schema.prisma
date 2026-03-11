@@ -112,6 +112,9 @@ model Problem {
   solutionQuery String
   orderMatters  Boolean      @default(false)
   difficulty    Difficulty   @default(EASY)
+  // The solution query's result set, computed and cached when the problem is
+  // authored so grading only needs to run the student's query.
+  expectedResult Json?
   datasetId     String
   dataset       Dataset      @relation(fields: [datasetId], references: [id], onDelete: Cascade)
   authorId      String
