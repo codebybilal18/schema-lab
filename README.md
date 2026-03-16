@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Schema Lab
 
-## Getting Started
+An interactive platform for learning SQL by writing SQL. Instructors seed a
+database and author problems; students solve them in the browser against a real
+Postgres engine and get instant, automated grading.
 
-First, run the development server:
+## How it works
+
+- **Instructors** create a dataset (raw seed SQL that builds tables and inserts
+  sample rows) and write problems with a hidden solution query. The solution is
+  run when the problem is saved, and its result is cached as the answer key.
+- **Students** open a problem, write a query in a Monaco editor, and run it. The
+  query executes against a fresh, isolated database and the result is compared to
+  the answer key. Feedback is immediate: correct, or where the output diverged.
+
+### Safe query execution
+
+Untrusted student SQL runs inside [PGlite](https://pglite.dev) (Postgres compiled
+to WebAssembly), spun up fresh in memory for every run and discarded afterwards.
+Each execution happens in a worker thread that is hard-terminated if it exceeds a
+time limit, which is the only reliable guard against runaway queries since PGlite
+runs single-threaded (a SQL `statement_timeout` cannot interrupt it).
+
+### Grading
+
+The grader compares the student's result to the cached answer key: column count,
+row count, then the row data, comparing cells by column position (so different
+aliases still pass) and respecting row order only when the problem requires it.
+
+## Stack
+
+- Next.js (App Router) with server actions
+- Prisma 7 with the `pg` driver adapter, against Neon Postgres
+- Better Auth (email and password)
+- PGlite for the sandboxed query engine
+- Tailwind CSS with shadcn/ui (Base UI)
+
+## Getting started
+
+Requires Node 20+ and pnpm.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Create a `.env` file (see `.env.example`):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+DATABASE_URL=   # Neon pooled connection string
+DIRECT_URL=     # Neon direct connection string (for migrations)
+BETTER_AUTH_SECRET=   # openssl rand -base64 32
+BETTER_AUTH_URL=http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Apply the schema and start the app:
 
-## Learn More
+```bash
+pnpm db:deploy   # apply migrations
+pnpm dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `pnpm dev` - start the dev server
+- `pnpm build` - production build
+- `pnpm db:migrate` - create and apply a migration in development
+- `pnpm db:deploy` - apply migrations (production)
+- `pnpm db:studio` - open Prisma Studio
