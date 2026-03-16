@@ -5,6 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { SolvePanel } from "@/components/student/solve-panel";
+import { Markdown } from "@/components/markdown";
 
 const DIFFICULTY_LABEL: Record<string, string> = {
   EASY: "Easy",
@@ -62,9 +63,7 @@ export default async function SolveProblemPage({
         </p>
       </div>
 
-      <div className="prose-sm text-foreground max-w-none whitespace-pre-wrap">
-        {problem.prompt}
-      </div>
+      <Markdown>{problem.prompt}</Markdown>
 
       <details className="rounded-lg border">
         <summary className="text-muted-foreground hover:text-foreground cursor-pointer px-4 py-2 text-sm">
