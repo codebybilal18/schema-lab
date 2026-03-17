@@ -95,6 +95,9 @@ model Dataset {
   title       String
   description String?
   seedSql     String
+  // Cached table/column structure, computed from seedSql when the dataset is
+  // saved so the solve page can show a schema reference without re-running it.
+  schemaInfo  Json?
   authorId    String
   author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   problems    Problem[]

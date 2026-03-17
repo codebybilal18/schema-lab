@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { createProblem } from "@/lib/actions/instructor";
+import { createProblem, updateProblem } from "@/lib/actions/instructor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,25 +17,45 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export function ProblemForm({ datasetId }: { datasetId: string }) {
+type ProblemInput = {
+  id: string;
+  title: string;
+  prompt: string;
+  solutionQuery: string;
+  orderMatters: boolean;
+  difficulty: string;
+};
+
+export function ProblemForm({
+  datasetId,
+  problem,
+}: {
+  datasetId: string;
+  problem?: ProblemInput;
+}) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
-  const [difficulty, setDifficulty] = useState("EASY");
-  const [orderMatters, setOrderMatters] = useState(false);
+  const [difficulty, setDifficulty] = useState(problem?.difficulty ?? "EASY");
+  const [orderMatters, setOrderMatters] = useState(
+    problem?.orderMatters ?? false,
+  );
+  const isEditing = Boolean(problem);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-
-    setIsSaving(true);
-    const result = await createProblem({
-      datasetId,
+    const values = {
       title: String(formData.get("title")),
       prompt: String(formData.get("prompt")),
       solutionQuery: String(formData.get("solutionQuery")),
       orderMatters,
       difficulty,
-    });
+    };
+
+    setIsSaving(true);
+    const result = problem
+      ? await updateProblem({ id: problem.id, ...values })
+      : await createProblem({ datasetId, ...values });
     setIsSaving(false);
 
     if (!result.ok) {
@@ -43,7 +63,7 @@ export function ProblemForm({ datasetId }: { datasetId: string }) {
       return;
     }
 
-    toast.success("Problem created");
+    toast.success(isEditing ? "Problem updated" : "Problem created");
     router.push(`/instructor/datasets/${datasetId}`);
     router.refresh();
   }
@@ -56,6 +76,7 @@ export function ProblemForm({ datasetId }: { datasetId: string }) {
           id="title"
           name="title"
           placeholder="Top customers by spend"
+          defaultValue={problem?.title}
           required
         />
       </div>
@@ -71,6 +92,7 @@ export function ProblemForm({ datasetId }: { datasetId: string }) {
           rows={5}
           required
           placeholder="Find the 3 customers who spent the most, highest first."
+          defaultValue={problem?.prompt}
         />
       </div>
 
@@ -88,6 +110,7 @@ export function ProblemForm({ datasetId }: { datasetId: string }) {
           spellCheck={false}
           className="font-mono text-sm"
           placeholder="SELECT name, spend FROM customers ORDER BY spend DESC LIMIT 3;"
+          defaultValue={problem?.solutionQuery}
         />
       </div>
 
@@ -126,7 +149,11 @@ export function ProblemForm({ datasetId }: { datasetId: string }) {
 
       <div className="flex justify-end">
         <Button type="submit" disabled={isSaving}>
-          {isSaving ? "Validating and saving..." : "Create problem"}
+          {isSaving
+            ? "Validating and saving..."
+            : isEditing
+              ? "Save changes"
+              : "Create problem"}
         </Button>
       </div>
     </form>

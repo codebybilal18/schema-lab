@@ -3,13 +3,10 @@ import { notFound } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { requireInstructor } from "@/lib/session";
+import { deleteDataset, deleteProblem } from "@/lib/actions/instructor";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { DeleteButton } from "@/components/instructor/delete-button";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function DatasetDetailPage({
   params,
@@ -46,13 +43,30 @@ export default async function DatasetDetailPage({
               <p className="text-muted-foreground">{dataset.description}</p>
             )}
           </div>
-          <Button
-            render={
-              <Link href={`/instructor/datasets/${dataset.id}/problems/new`} />
-            }
-          >
-            Add problem
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              render={<Link href={`/instructor/datasets/${dataset.id}/edit`} />}
+            >
+              Edit
+            </Button>
+            <DeleteButton
+              action={deleteDataset.bind(null, dataset.id)}
+              confirmMessage="Delete this dataset and all of its problems? This cannot be undone."
+              redirectTo="/instructor"
+            />
+            <Button
+              size="sm"
+              render={
+                <Link
+                  href={`/instructor/datasets/${dataset.id}/problems/new`}
+                />
+              }
+            >
+              Add problem
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -76,12 +90,35 @@ export default async function DatasetDetailPage({
             {dataset.problems.map((problem) => (
               <Card key={problem.id}>
                 <CardHeader>
-                  <CardTitle className="text-base">{problem.title}</CardTitle>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <CardTitle className="text-base">
+                        {problem.title}
+                      </CardTitle>
+                      <p className="text-muted-foreground mt-1 text-sm">
+                        {problem.difficulty}
+                        {problem.orderMatters ? " - order matters" : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        render={
+                          <Link
+                            href={`/instructor/datasets/${dataset.id}/problems/${problem.id}/edit`}
+                          />
+                        }
+                      >
+                        Edit
+                      </Button>
+                      <DeleteButton
+                        action={deleteProblem.bind(null, problem.id)}
+                        confirmMessage="Delete this problem? This cannot be undone."
+                      />
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent className="text-muted-foreground text-sm">
-                  {problem.difficulty}
-                  {problem.orderMatters ? " - order matters" : ""}
-                </CardContent>
               </Card>
             ))}
           </div>
