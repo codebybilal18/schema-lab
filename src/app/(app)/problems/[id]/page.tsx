@@ -5,7 +5,10 @@ import { CheckCircle2 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { SolvePanel } from "@/components/student/solve-panel";
+import { SchemaView } from "@/components/student/schema-view";
+import { SubmissionHistory } from "@/components/student/submission-history";
 import { Markdown } from "@/components/markdown";
+import type { TableSchema } from "@/lib/sql/schema";
 
 const DIFFICULTY_LABEL: Record<string, string> = {
   EASY: "Easy",
@@ -24,11 +27,12 @@ export default async function SolveProblemPage({
   const problem = await prisma.problem.findUnique({
     where: { id },
     include: {
-      dataset: { select: { title: true, seedSql: true } },
+      dataset: { select: { title: true, schemaInfo: true } },
       submissions: {
-        where: { userId: user.id, passed: true },
-        select: { id: true },
-        take: 1,
+        where: { userId: user.id },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        select: { id: true, query: true, passed: true, createdAt: true },
       },
     },
   });
@@ -37,7 +41,7 @@ export default async function SolveProblemPage({
     notFound();
   }
 
-  const solved = problem.submissions.length > 0;
+  const solved = problem.submissions.some((submission) => submission.passed);
 
   return (
     <div className="space-y-6">
@@ -65,16 +69,22 @@ export default async function SolveProblemPage({
 
       <Markdown>{problem.prompt}</Markdown>
 
-      <details className="rounded-lg border">
-        <summary className="text-muted-foreground hover:text-foreground cursor-pointer px-4 py-2 text-sm">
-          Database schema and sample data
-        </summary>
-        <pre className="bg-muted overflow-x-auto border-t p-4 text-xs">
-          <code className="font-mono">{problem.dataset.seedSql}</code>
-        </pre>
-      </details>
+      <section className="space-y-2">
+        <h2 className="text-sm font-medium">Tables</h2>
+        <SchemaView
+          schema={
+            (problem.dataset.schemaInfo as unknown as TableSchema[] | null) ??
+            []
+          }
+        />
+      </section>
 
       <SolvePanel problemId={problem.id} initialQuery="" />
+
+      <section className="space-y-2">
+        <h2 className="text-sm font-medium">Your attempts</h2>
+        <SubmissionHistory submissions={problem.submissions} />
+      </section>
     </div>
   );
 }

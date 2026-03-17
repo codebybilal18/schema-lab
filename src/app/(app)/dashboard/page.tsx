@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 
+import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,12 +19,23 @@ export const metadata: Metadata = {
 export default async function DashboardPage() {
   const user = await requireUser();
 
+  const [totalProblems, solved] = await Promise.all([
+    prisma.problem.count(),
+    prisma.submission.findMany({
+      where: { userId: user.id, passed: true },
+      distinct: ["problemId"],
+      select: { problemId: true },
+    }),
+  ]);
+  const solvedCount = solved.length;
+
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold">Hi {user.name}</h1>
         <p className="text-muted-foreground">
-          Pick a problem and start writing SQL.
+          You have solved {solvedCount} of {totalProblems} problem
+          {totalProblems === 1 ? "" : "s"}.
         </p>
       </div>
 

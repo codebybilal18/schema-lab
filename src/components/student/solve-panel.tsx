@@ -33,8 +33,11 @@ export function SolvePanel({
     setIsRunning(false);
     setOutcome(result);
 
-    if (result.ok && result.passed) {
-      toast.success("Correct!");
+    if (result.ok) {
+      if (result.passed) {
+        toast.success("Correct!");
+      }
+      // Refresh so the attempt history (and solved badge) update.
       router.refresh();
     }
   }
