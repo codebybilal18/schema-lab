@@ -5,26 +5,38 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export function DeleteButton({
   action,
-  confirmMessage,
+  title,
+  description,
   redirectTo,
   label = "Delete",
   size = "sm",
 }: {
   action: () => Promise<{ ok: true } | { ok: false; error: string }>;
-  confirmMessage: string;
+  title: string;
+  description: string;
   redirectTo?: string;
   label?: string;
   size?: "sm" | "xs";
 }) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [open, setOpen] = useState(false);
 
-  async function onClick() {
-    if (!window.confirm(confirmMessage)) return;
-
+  async function confirm() {
     setIsDeleting(true);
     const result = await action();
 
@@ -35,6 +47,8 @@ export function DeleteButton({
     }
 
     toast.success("Deleted");
+    setIsDeleting(false);
+    setOpen(false);
     if (redirectTo) {
       router.push(redirectTo);
     }
@@ -42,13 +56,28 @@ export function DeleteButton({
   }
 
   return (
-    <Button
-      variant="destructive"
-      size={size}
-      onClick={onClick}
-      disabled={isDeleting}
-    >
-      {isDeleting ? "Deleting..." : label}
-    </Button>
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger
+        render={<Button variant="destructive" size={size} />}
+      >
+        {label}
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            onClick={confirm}
+            disabled={isDeleting}
+          >
+            {isDeleting ? "Deleting..." : "Delete"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

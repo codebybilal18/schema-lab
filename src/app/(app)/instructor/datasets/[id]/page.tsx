@@ -53,7 +53,8 @@ export default async function DatasetDetailPage({
             </Button>
             <DeleteButton
               action={deleteDataset.bind(null, dataset.id)}
-              confirmMessage="Delete this dataset and all of its problems? This cannot be undone."
+              title="Delete dataset?"
+              description="This deletes the dataset and all of its problems and submissions. This cannot be undone."
               redirectTo="/instructor"
             />
             <Button
@@ -114,7 +115,8 @@ export default async function DatasetDetailPage({
                       </Button>
                       <DeleteButton
                         action={deleteProblem.bind(null, problem.id)}
-                        confirmMessage="Delete this problem? This cannot be undone."
+                        title="Delete problem?"
+                        description="This deletes the problem and all of its submissions. This cannot be undone."
                       />
                     </div>
                   </div>
