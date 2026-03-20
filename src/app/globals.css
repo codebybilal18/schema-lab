@@ -127,4 +127,20 @@
   html {
     @apply font-sans;
   }
+  button:not(:disabled),
+  [role="button"],
+  [role="option"],
+  [role="menuitem"],
+  [role="radio"],
+  [role="checkbox"],
+  [role="combobox"],
+  [role="tab"],
+  summary,
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  label:has(> input[type="checkbox"]),
+  label:has(> input[type="radio"]) {
+    cursor: pointer;
+  }
 }
