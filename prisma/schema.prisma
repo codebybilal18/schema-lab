@@ -21,11 +21,13 @@ model User {
   role          Role         @default(STUDENT)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  datasets      Dataset[]
-  problems      Problem[]
-  submissions   Submission[]
+  sessions         Session[]
+  accounts         Account[]
+  datasets         Dataset[]
+  problems         Problem[]
+  submissions      Submission[]
+  taughtClasses    Classroom[]       @relation("TaughtClasses")
+  classMemberships ClassroomMember[]
 
   @@unique([email])
   @@map("user")
@@ -125,6 +127,7 @@ model Problem {
   authorId      String?
   author        User?        @relation(fields: [authorId], references: [id], onDelete: Cascade)
   submissions   Submission[]
+  assignments   AssignmentProblem[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -148,4 +151,59 @@ model Submission {
   @@index([problemId])
   @@index([userId])
   @@map("submission")
+}
+
+model Classroom {
+  id           String            @id @default(cuid())
+  name         String
+  description  String?
+  joinCode     String            @unique
+  instructorId String
+  instructor   User              @relation("TaughtClasses", fields: [instructorId], references: [id], onDelete: Cascade)
+  members      ClassroomMember[]
+  assignments  Assignment[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([instructorId])
+  @@map("classroom")
+}
+
+model ClassroomMember {
+  id          String    @id @default(cuid())
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt    DateTime  @default(now())
+
+  @@unique([classroomId, userId])
+  @@index([userId])
+  @@map("classroom_member")
+}
+
+model Assignment {
+  id          String              @id @default(cuid())
+  title       String
+  classroomId String
+  classroom   Classroom           @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  problems    AssignmentProblem[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([classroomId])
+  @@map("assignment")
+}
+
+model AssignmentProblem {
+  id           String     @id @default(cuid())
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  problemId    String
+  problem      Problem    @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  position     Int        @default(0)
+
+  @@unique([assignmentId, problemId])
+  @@index([problemId])
+  @@map("assignment_problem")
 }
