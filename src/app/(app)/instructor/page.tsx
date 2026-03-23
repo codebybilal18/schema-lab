@@ -44,12 +44,17 @@ export default async function InstructorPage() {
           <CardHeader>
             <CardTitle>No datasets yet</CardTitle>
             <CardDescription>
-              Create your first dataset to start authoring problems.
+              A dataset is some seed SQL that builds tables and sample rows.
+              Create one to start authoring problems, or browse the example
+              problems to see how it works.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-wrap gap-2">
             <Button render={<Link href="/instructor/datasets/new" />}>
               Create a dataset
+            </Button>
+            <Button variant="outline" render={<Link href="/problems" />}>
+              Browse example problems
             </Button>
           </CardContent>
         </Card>

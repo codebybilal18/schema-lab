@@ -68,8 +68,16 @@ export default async function ProblemsPage() {
                     </div>
                     <CardDescription>{problem.dataset.title}</CardDescription>
                   </CardHeader>
-                  <CardContent className="text-muted-foreground text-sm">
-                    {DIFFICULTY_LABEL[problem.difficulty] ?? problem.difficulty}
+                  <CardContent className="text-muted-foreground flex items-center gap-2 text-sm">
+                    <span>
+                      {DIFFICULTY_LABEL[problem.difficulty] ??
+                        problem.difficulty}
+                    </span>
+                    {problem.authorId === null && (
+                      <span className="bg-muted rounded px-1.5 py-0.5 text-xs font-medium">
+                        Official
+                      </span>
+                    )}
                   </CardContent>
                 </Card>
               </Link>
