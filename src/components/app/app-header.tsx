@@ -23,6 +23,12 @@ export function AppHeader({ name, role }: AppHeaderProps) {
           >
             Problems
           </Link>
+          <Link
+            href={isInstructor ? "/instructor/classes" : "/classes"}
+            className="text-muted-foreground hover:text-foreground text-sm"
+          >
+            Classes
+          </Link>
           {isInstructor && (
             <Link
               href="/instructor"
