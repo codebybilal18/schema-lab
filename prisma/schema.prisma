@@ -92,6 +92,11 @@ enum Difficulty {
   HARD
 }
 
+enum AssignmentType {
+  PRACTICE
+  QUIZ
+}
+
 model Dataset {
   id          String    @id @default(cuid())
   title       String
@@ -146,10 +151,14 @@ model Submission {
   problem    Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Set when the submission was made under an assignment (e.g. a quiz).
+  assignmentId String?
+  assignment   Assignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
   createdAt  DateTime @default(now())
 
   @@index([problemId])
   @@index([userId])
+  @@index([assignmentId])
   @@map("submission")
 }
 
@@ -185,9 +194,14 @@ model ClassroomMember {
 model Assignment {
   id          String              @id @default(cuid())
   title       String
+  type        AssignmentType      @default(PRACTICE)
+  // Quiz window. Null bounds mean unbounded on that side.
+  opensAt     DateTime?
+  closesAt    DateTime?
   classroomId String
   classroom   Classroom           @relation(fields: [classroomId], references: [id], onDelete: Cascade)
   problems    AssignmentProblem[]
+  submissions Submission[]
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
 
