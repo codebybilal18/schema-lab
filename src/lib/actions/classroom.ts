@@ -32,7 +32,16 @@ const assignmentSchema = z.object({
   classroomId: z.string().min(1),
   title: z.string().trim().min(1, "Title is required").max(160),
   problemIds: z.array(z.string().min(1)).min(1, "Pick at least one problem"),
+  type: z.enum(["PRACTICE", "QUIZ"]),
+  opensAt: z.string().optional(),
+  closesAt: z.string().optional(),
 });
+
+function parseDate(value?: string): Date | null {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
 
 export type ClassroomActionResult =
   | { ok: true; classroomId: string }
@@ -133,6 +142,9 @@ export async function createAssignment(input: {
   classroomId: string;
   title: string;
   problemIds: string[];
+  type: string;
+  opensAt?: string;
+  closesAt?: string;
 }): Promise<AssignmentActionResult> {
   const user = await requireInstructor();
 
@@ -146,6 +158,13 @@ export async function createAssignment(input: {
   });
   if (!classroom || classroom.instructorId !== user.id) {
     return { ok: false, error: "Class not found" };
+  }
+
+  const isQuiz = parsed.data.type === "QUIZ";
+  const opensAt = isQuiz ? parseDate(parsed.data.opensAt) : null;
+  const closesAt = isQuiz ? parseDate(parsed.data.closesAt) : null;
+  if (opensAt && closesAt && closesAt <= opensAt) {
+    return { ok: false, error: "The close time must be after the open time" };
   }
 
   // Only official problems and the instructor's own problems can be assigned.
@@ -165,6 +184,9 @@ export async function createAssignment(input: {
   const assignment = await prisma.assignment.create({
     data: {
       title: parsed.data.title,
+      type: parsed.data.type,
+      opensAt,
+      closesAt,
       classroomId: classroom.id,
       problems: {
         create: chosen.map((problemId, index) => ({
