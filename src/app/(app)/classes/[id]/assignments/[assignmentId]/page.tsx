@@ -4,6 +4,7 @@ import { CheckCircle2 } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
+import { quizStatus } from "@/lib/quiz";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const DIFFICULTY_LABEL: Record<string, string> = {
@@ -75,11 +76,33 @@ export default async function AssignmentPage({
         <h1 className="mt-2 text-2xl font-semibold">{assignment.title}</h1>
       </div>
 
+      {(() => {
+        const status = quizStatus(assignment);
+        if (!status.isQuiz) return null;
+        return (
+          <div
+            className={
+              status.open
+                ? "rounded-lg border border-green-600/30 bg-green-600/5 p-3 text-sm text-green-700 dark:text-green-400"
+                : "border-muted-foreground/20 bg-muted text-muted-foreground rounded-lg border p-3 text-sm"
+            }
+          >
+            <span className="font-medium">Quiz</span> - {status.label}
+            {!status.open &&
+              ". Submissions are not accepted outside the quiz window."}
+          </div>
+        );
+      })()}
+
       <div className="space-y-2">
         {assignment.problems.map(({ problem }) => {
           const solved = problem.submissions.length > 0;
           return (
-            <Link key={problem.id} href={`/problems/${problem.id}`}>
+            <Link
+              key={problem.id}
+              href={`/problems/${problem.id}?assignmentId=${assignment.id}&classId=${assignment.classroom.id}`}
+              className="block"
+            >
               <Card className="hover:border-primary/50 transition-colors">
                 <CardHeader>
                   <div className="flex items-center justify-between gap-2">

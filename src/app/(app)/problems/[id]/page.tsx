@@ -18,11 +18,42 @@ const DIFFICULTY_LABEL: Record<string, string> = {
 
 export default async function SolveProblemPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ assignmentId?: string; classId?: string }>;
 }) {
   const { id } = await params;
+  const { assignmentId, classId } = await searchParams;
   const user = await requireUser();
+
+  // Default back link points to the library. If the problem was opened from an
+  // assignment the student has access to, point back to that assignment.
+  let backHref = "/problems";
+  let backLabel = "Back to problems";
+  let contextAssignmentId: string | undefined;
+
+  if (assignmentId && classId) {
+    const assignment = await prisma.assignment.findFirst({
+      where: {
+        id: assignmentId,
+        classroomId: classId,
+        problems: { some: { problemId: id } },
+        classroom: {
+          OR: [
+            { instructorId: user.id },
+            { members: { some: { userId: user.id } } },
+          ],
+        },
+      },
+      select: { id: true, title: true },
+    });
+    if (assignment) {
+      backHref = `/classes/${classId}/assignments/${assignmentId}`;
+      backLabel = `Back to ${assignment.title}`;
+      contextAssignmentId = assignment.id;
+    }
+  }
 
   const problem = await prisma.problem.findUnique({
     where: { id },
@@ -47,10 +78,10 @@ export default async function SolveProblemPage({
     <div className="space-y-6">
       <div>
         <Link
-          href="/problems"
+          href={backHref}
           className="text-muted-foreground hover:text-foreground text-sm"
         >
-          Back to problems
+          {backLabel}
         </Link>
         <div className="mt-2 flex items-center gap-3">
           <h1 className="text-2xl font-semibold">{problem.title}</h1>
@@ -79,7 +110,11 @@ export default async function SolveProblemPage({
         />
       </section>
 
-      <SolvePanel problemId={problem.id} initialQuery="" />
+      <SolvePanel
+        problemId={problem.id}
+        assignmentId={contextAssignmentId}
+        initialQuery=""
+      />
 
       <section className="space-y-2">
         <h2 className="text-sm font-medium">Your attempts</h2>

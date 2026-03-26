@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
+import { quizStatus } from "@/lib/quiz";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function StudentClassPage({
@@ -51,24 +52,41 @@ export default async function StudentClassPage({
           </p>
         ) : (
           <div className="space-y-2">
-            {classroom.assignments.map((assignment) => (
-              <Link
-                key={assignment.id}
-                href={`/classes/${classroom.id}/assignments/${assignment.id}`}
-              >
-                <Card className="hover:border-primary/50 transition-colors">
-                  <CardHeader>
-                    <CardTitle className="text-base">
-                      {assignment.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-muted-foreground text-sm">
-                    {assignment._count.problems} problem
-                    {assignment._count.problems === 1 ? "" : "s"}
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+            {classroom.assignments.map((assignment) => {
+              const status = quizStatus(assignment);
+              return (
+                <Link
+                  key={assignment.id}
+                  href={`/classes/${classroom.id}/assignments/${assignment.id}`}
+                  className="block"
+                >
+                  <Card className="hover:border-primary/50 transition-colors">
+                    <CardHeader>
+                      <div className="flex items-center justify-between gap-2">
+                        <CardTitle className="text-base">
+                          {assignment.title}
+                        </CardTitle>
+                        {status.isQuiz && (
+                          <span
+                            className={
+                              status.open
+                                ? "rounded bg-green-600/10 px-1.5 py-0.5 text-xs font-medium text-green-700 dark:text-green-400"
+                                : "bg-muted text-muted-foreground rounded px-1.5 py-0.5 text-xs font-medium"
+                            }
+                          >
+                            Quiz - {status.label}
+                          </span>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="text-muted-foreground text-sm">
+                      {assignment._count.problems} problem
+                      {assignment._count.problems === 1 ? "" : "s"}
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
           </div>
         )}
       </section>

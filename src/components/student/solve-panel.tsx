@@ -12,9 +12,11 @@ import { ResultTable } from "@/components/student/result-table";
 
 export function SolvePanel({
   problemId,
+  assignmentId,
   initialQuery,
 }: {
   problemId: string;
+  assignmentId?: string;
   initialQuery: string;
 }) {
   const router = useRouter();
@@ -29,7 +31,7 @@ export function SolvePanel({
     }
 
     setIsRunning(true);
-    const result = await submitSolution({ problemId, query });
+    const result = await submitSolution({ problemId, query, assignmentId });
     setIsRunning(false);
     setOutcome(result);
 

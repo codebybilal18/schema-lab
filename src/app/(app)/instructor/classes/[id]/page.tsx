@@ -3,10 +3,16 @@ import { notFound } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { requireInstructor } from "@/lib/session";
-import { deleteAssignment, deleteClassroom } from "@/lib/actions/classroom";
+import { deleteClassroom } from "@/lib/actions/classroom";
+import { quizStatus } from "@/lib/quiz";
 import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/instructor/delete-button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default async function InstructorClassPage({
   params,
@@ -91,28 +97,33 @@ export default async function InstructorClassPage({
           </p>
         ) : (
           <div className="space-y-2">
-            {classroom.assignments.map((assignment) => (
-              <Card key={assignment.id}>
-                <CardHeader>
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <CardTitle className="text-base">
-                        {assignment.title}
-                      </CardTitle>
-                      <p className="text-muted-foreground mt-1 text-sm">
-                        {assignment._count.problems} problem
-                        {assignment._count.problems === 1 ? "" : "s"}
-                      </p>
-                    </div>
-                    <DeleteButton
-                      action={deleteAssignment.bind(null, assignment.id)}
-                      title="Delete assignment?"
-                      description="This removes the assignment. Student submissions on the problems are kept."
-                    />
-                  </div>
-                </CardHeader>
-              </Card>
-            ))}
+            {classroom.assignments.map((assignment) => {
+              const status = quizStatus(assignment);
+              return (
+                <Link
+                  key={assignment.id}
+                  href={`/instructor/classes/${classroom.id}/assignments/${assignment.id}`}
+                  className="block"
+                >
+                  <Card className="hover:border-primary/50 transition-colors">
+                    <CardHeader>
+                      <div className="flex items-center justify-between gap-2">
+                        <CardTitle className="text-base">
+                          {assignment.title}
+                        </CardTitle>
+                        <span className="bg-muted text-muted-foreground rounded px-1.5 py-0.5 text-xs font-medium">
+                          {status.isQuiz ? `Quiz - ${status.label}` : "Practice"}
+                        </span>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="text-muted-foreground text-sm">
+                      {assignment._count.problems} problem
+                      {assignment._count.problems === 1 ? "" : "s"}
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
           </div>
         )}
       </section>
