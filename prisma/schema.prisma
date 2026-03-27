@@ -16,6 +16,9 @@ model User {
   id            String       @id
   name          String
   email         String
+  // Canonical form of the email (lowercased, +tag stripped, gmail dots removed)
+  // used to reject alias sign-ups for an address that already exists.
+  normalizedEmail String?    @unique
   emailVerified Boolean      @default(false)
   image         String?
   role          Role         @default(STUDENT)
