@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
     "pg",
     "better-auth",
     "@electric-sql/pglite",
+    "nodemailer",
   ],
 };
 
