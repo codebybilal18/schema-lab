@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 
 type ProblemOption = {
   id: string;
@@ -34,6 +35,8 @@ export function AssignmentForm({
   const [isSaving, setIsSaving] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [type, setType] = useState("PRACTICE");
+  const [opensAt, setOpensAt] = useState<Date | null>(null);
+  const [closesAt, setClosesAt] = useState<Date | null>(null);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -62,8 +65,8 @@ export function AssignmentForm({
       title: String(formData.get("title")),
       problemIds: Array.from(selected),
       type,
-      opensAt: String(formData.get("opensAt") ?? ""),
-      closesAt: String(formData.get("closesAt") ?? ""),
+      opensAt: opensAt?.toISOString() ?? "",
+      closesAt: closesAt?.toISOString() ?? "",
     });
     setIsSaving(false);
 
@@ -105,15 +108,15 @@ export function AssignmentForm({
       {type === "QUIZ" && (
         <div className="grid gap-6 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="opensAt">Opens at</Label>
-            <Input id="opensAt" name="opensAt" type="datetime-local" />
+            <Label>Opens at</Label>
+            <DateTimePicker value={opensAt} onChange={setOpensAt} />
             <p className="text-muted-foreground text-xs">
               Leave blank to open immediately.
             </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="closesAt">Closes at</Label>
-            <Input id="closesAt" name="closesAt" type="datetime-local" />
+            <Label>Closes at</Label>
+            <DateTimePicker value={closesAt} onChange={setClosesAt} />
             <p className="text-muted-foreground text-xs">
               Leave blank to stay open.
             </p>
