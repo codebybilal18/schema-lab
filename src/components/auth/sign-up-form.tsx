@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 
-import { signUp } from "@/lib/auth-client";
-import { updateUserRole } from "@/lib/actions/user";
+import { signUpAction } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -35,9 +33,9 @@ const ROLES = [
 ] as const;
 
 export function SignUpForm() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [role, setRole] = useState<string>("STUDENT");
+  const [sentToEmail, setSentToEmail] = useState<string | null>(null);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -47,25 +45,34 @@ export function SignUpForm() {
     const password = String(formData.get("password"));
 
     setIsLoading(true);
-    const { error } = await signUp.email({ name, email, password });
+    const result = await signUpAction({ name, email, password, role });
+    setIsLoading(false);
 
-    if (error) {
-      setIsLoading(false);
-      toast.error(error.message ?? "Could not create account");
+    if (!result.ok) {
+      toast.error(result.error);
       return;
     }
 
-    if (role === "INSTRUCTOR") {
-      try {
-        await updateUserRole("INSTRUCTOR");
-      } catch {
-        toast.error("Account created, but we could not set the instructor role");
-      }
-    }
+    setSentToEmail(email);
+  }
 
-    setIsLoading(false);
-    router.push("/dashboard");
-    router.refresh();
+  if (sentToEmail) {
+    return (
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle>Check your email</CardTitle>
+          <CardDescription>
+            We sent a verification link to {sentToEmail}. Open it to activate
+            your account, then sign in.
+          </CardDescription>
+        </CardHeader>
+        <CardFooter>
+          <Button className="w-full" render={<Link href="/sign-in" />}>
+            Go to sign in
+          </Button>
+        </CardFooter>
+      </Card>
+    );
   }
 
   return (

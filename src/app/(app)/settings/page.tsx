@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { requireUser } from "@/lib/session";
 import { RoleSwitcher } from "@/components/settings/role-switcher";
+import { ChangePasswordForm } from "@/components/settings/change-password-form";
 import {
   Card,
   CardContent,
@@ -33,6 +34,18 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent>
           <RoleSwitcher role={user.role} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Password</CardTitle>
+          <CardDescription>
+            Change your password. This signs you out of other devices.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ChangePasswordForm />
         </CardContent>
       </Card>
     </div>

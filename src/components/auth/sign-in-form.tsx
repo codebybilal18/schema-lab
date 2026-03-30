@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 
-import { signIn } from "@/lib/auth-client";
+import { signIn, authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -22,6 +22,7 @@ import {
 export function SignInForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -29,17 +30,35 @@ export function SignInForm() {
     const email = String(formData.get("email"));
     const password = String(formData.get("password"));
 
+    setUnverifiedEmail(null);
     setIsLoading(true);
     const { error } = await signIn.email({ email, password });
     setIsLoading(false);
 
     if (error) {
+      if (error.code === "EMAIL_NOT_VERIFIED") {
+        setUnverifiedEmail(email);
+        toast.error("Please verify your email before signing in");
+        return;
+      }
       toast.error(error.message ?? "Could not sign in");
       return;
     }
 
     router.push("/dashboard");
     router.refresh();
+  }
+
+  async function resendVerification() {
+    if (!unverifiedEmail) return;
+    const { error } = await authClient.sendVerificationEmail({
+      email: unverifiedEmail,
+    });
+    if (error) {
+      toast.error(error.message ?? "Could not resend the email");
+      return;
+    }
+    toast.success("Verification email sent");
   }
 
   return (
@@ -75,12 +94,29 @@ export function SignInForm() {
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Signing in..." : "Sign in"}
           </Button>
-          <p className="text-muted-foreground text-sm">
-            Don&apos;t have an account?{" "}
+          {unverifiedEmail && (
+            <p className="text-muted-foreground text-sm">
+              Didn&apos;t get the email?{" "}
+              <button
+                type="button"
+                onClick={resendVerification}
+                className="text-foreground underline"
+              >
+                Resend verification
+              </button>
+            </p>
+          )}
+          <div className="flex w-full items-center justify-between text-sm">
+            <Link
+              href="/forgot-password"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              Forgot password?
+            </Link>
             <Link href="/sign-up" className="text-foreground underline">
               Sign up
             </Link>
-          </p>
+          </div>
         </CardFooter>
       </form>
     </Card>
