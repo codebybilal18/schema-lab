@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import { requireUser } from "@/lib/session";
-import { RoleSwitcher } from "@/components/settings/role-switcher";
 import { ChangePasswordForm } from "@/components/settings/change-password-form";
 import {
   Card,
@@ -32,8 +31,9 @@ export default async function SettingsPage() {
             {user.name} - {user.email}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <RoleSwitcher role={user.role} />
+        <CardContent className="text-muted-foreground text-sm">
+          You are signed in as {user.role === "INSTRUCTOR" ? "an" : "a"}{" "}
+          {user.role === "INSTRUCTOR" ? "instructor" : "student"}.
         </CardContent>
       </Card>
 
