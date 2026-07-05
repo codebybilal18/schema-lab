@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 import { Worker } from "node:worker_threads";
 
 import type { RunOptions, SqlRunOutcome } from "./types";
@@ -5,16 +6,24 @@ import type { RunOptions, SqlRunOutcome } from "./types";
 const DEFAULT_MAX_ROWS = 1000;
 const DEFAULT_TIMEOUT_MS = 5000;
 
+// Resolve PGlite to an absolute path here in the parent module, where module
+// resolution works and where the deploy-time file tracer can see the reference
+// (so the package is actually shipped into the serverless function). The worker
+// below runs from an eval'd source string with no resolvable package root, so it
+// cannot resolve the bare "@electric-sql/pglite" specifier on its own.
+const require = createRequire(import.meta.url);
+const PGLITE_ENTRY = require.resolve("@electric-sql/pglite");
+
 // The worker runs an ephemeral in-memory Postgres (PGlite) instance. It is
 // spawned from an inline source string so there is no separate file to resolve
-// or bundle. PGlite is loaded from node_modules via a dynamic import (it is
-// listed in serverExternalPackages, so it is never bundled).
+// or bundle. PGlite is loaded by absolute path (passed via workerData) rather
+// than a bare specifier, which the eval'd worker cannot resolve.
 const WORKER_SOURCE = `
 const { parentPort, workerData } = require("node:worker_threads");
 
 (async () => {
-  const { seedSql, query, maxRows } = workerData;
-  const { PGlite } = await import("@electric-sql/pglite");
+  const { seedSql, query, maxRows, pglitePath } = workerData;
+  const { PGlite } = require(pglitePath);
   const db = new PGlite();
   try {
     await db.exec(seedSql);
@@ -61,7 +70,7 @@ export function runSeededQuery(
   return new Promise((resolve) => {
     const worker = new Worker(WORKER_SOURCE, {
       eval: true,
-      workerData: { seedSql, query, maxRows },
+      workerData: { seedSql, query, maxRows, pglitePath: PGLITE_ENTRY },
     });
 
     let settled = false;
