@@ -11,10 +11,13 @@ const DEFAULT_TIMEOUT_MS = 5000;
 // (so the package is actually shipped into the serverless function). The worker
 // below runs from an eval'd source string with no resolvable package root, so it
 // cannot resolve the bare "@electric-sql/pglite" specifier on its own.
-// Named nodeRequire (not "require") on purpose: bundlers rewrite any literal
-// `require.resolve(...)` into a numeric module id, which the worker cannot load.
+// Resolve PGlite to a real filesystem path for the worker to require. Two
+// bundler traps to avoid: the binding must not be literally named "require",
+// and the specifier must not be a string literal, or webpack/turbopack will
+// rewrite the call into a numeric module id that the worker cannot load.
 const nodeRequire = createRequire(import.meta.url);
-const PGLITE_ENTRY = nodeRequire.resolve("@electric-sql/pglite");
+const PGLITE_SPECIFIER = ["@electric-sql", "pglite"].join("/");
+const PGLITE_ENTRY = nodeRequire.resolve(PGLITE_SPECIFIER);
 
 // The worker runs an ephemeral in-memory Postgres (PGlite) instance. It is
 // spawned from an inline source string so there is no separate file to resolve
