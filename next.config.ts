@@ -16,8 +16,11 @@ const nextConfig: NextConfig = {
   // package into the serverless function bundle so it exists at runtime.
   outputFileTracingIncludes: {
     "/**": [
-      "./node_modules/@electric-sql/pglite/dist/**",
-      "./node_modules/.pnpm/@electric-sql+pglite@*/node_modules/@electric-sql/pglite/dist/**",
+      // Whole package dir, not just dist/: Node needs package.json to resolve
+      // the bare specifier. Both the symlink path and the real pnpm store path
+      // so the package exists and is resolvable from /var/task at runtime.
+      "./node_modules/@electric-sql/pglite/**",
+      "./node_modules/.pnpm/@electric-sql+pglite@*/node_modules/@electric-sql/pglite/**",
     ],
   },
 };
