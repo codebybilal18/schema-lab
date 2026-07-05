@@ -1,4 +1,3 @@
-import { createRequire } from "node:module";
 import { Worker } from "node:worker_threads";
 
 import type { RunOptions, SqlRunOutcome } from "./types";
@@ -6,29 +5,21 @@ import type { RunOptions, SqlRunOutcome } from "./types";
 const DEFAULT_MAX_ROWS = 1000;
 const DEFAULT_TIMEOUT_MS = 5000;
 
-// Resolve PGlite to an absolute path here in the parent module, where module
-// resolution works and where the deploy-time file tracer can see the reference
-// (so the package is actually shipped into the serverless function). The worker
-// below runs from an eval'd source string with no resolvable package root, so it
-// cannot resolve the bare "@electric-sql/pglite" specifier on its own.
-// Resolve PGlite to a real filesystem path for the worker to require. Two
-// bundler traps to avoid: the binding must not be literally named "require",
-// and the specifier must not be a string literal, or webpack/turbopack will
-// rewrite the call into a numeric module id that the worker cannot load.
-const nodeRequire = createRequire(import.meta.url);
-const PGLITE_SPECIFIER = ["@electric-sql", "pglite"].join("/");
-const PGLITE_ENTRY = nodeRequire.resolve(PGLITE_SPECIFIER);
-
-// The worker runs an ephemeral in-memory Postgres (PGlite) instance. It is
-// spawned from an inline source string so there is no separate file to resolve
-// or bundle. PGlite is loaded by absolute path (passed via workerData) rather
-// than a bare specifier, which the eval'd worker cannot resolve.
+// The worker runs an ephemeral in-memory Postgres (PGlite) instance from an
+// inline source string. All PGlite module resolution happens INSIDE this string,
+// which the bundler never parses. Doing it in the parent module instead makes
+// webpack/turbopack rewrite the require into a numeric module id or fail the
+// build with "expression is too dynamic". The worker resolves PGlite via a
+// require rooted at the process working directory (/var/task on the server),
+// where serverExternalPackages + outputFileTracingIncludes place the package.
 const WORKER_SOURCE = `
 const { parentPort, workerData } = require("node:worker_threads");
+const { createRequire } = require("node:module");
 
 (async () => {
-  const { seedSql, query, maxRows, pglitePath } = workerData;
-  const { PGlite } = require(pglitePath);
+  const { seedSql, query, maxRows } = workerData;
+  const requireFromCwd = createRequire(process.cwd() + "/index.js");
+  const { PGlite } = requireFromCwd("@electric-sql/pglite");
   const db = new PGlite();
   try {
     await db.exec(seedSql);
@@ -75,7 +66,7 @@ export function runSeededQuery(
   return new Promise((resolve) => {
     const worker = new Worker(WORKER_SOURCE, {
       eval: true,
-      workerData: { seedSql, query, maxRows, pglitePath: PGLITE_ENTRY },
+      workerData: { seedSql, query, maxRows },
     });
 
     let settled = false;
