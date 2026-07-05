@@ -66,3 +66,24 @@ pnpm dev
 - `pnpm db:migrate` - create and apply a migration in development
 - `pnpm db:deploy` - apply migrations (production)
 - `pnpm db:studio` - open Prisma Studio
+
+## Contributing
+
+Schema Lab is open source and contributions are welcome. The backend (SQL
+sandbox, grading, auth, data model) is in a working state; the frontend is
+intentionally plain, so UI and UX improvements are an especially good place to
+start. Some ideas:
+
+- Redesign the problem-solving and instructor screens, or theme the app.
+- Improve the query editor experience (schema autocomplete, result formatting).
+- Add features on top of the existing model (leaderboards, hints, more problem
+  types).
+
+To contribute, fork the repo, create a branch, and open a pull request. For
+anything larger, opening an issue first to discuss the direction is appreciated.
+You are also free to fork it and build your own app on top of it.
+
+## License
+
+Released under the [MIT License](LICENSE) - use it, modify it, and build your
+own apps with it.
