@@ -1,6 +1,11 @@
 import { AppHeader } from "@/components/app/app-header";
 import { requireUser } from "@/lib/session";
 
+// Running SQL boots an ephemeral PGlite (Postgres wasm) instance per query. A
+// cold start can take several seconds, so allow more than the platform default
+// for the pages and server actions under this segment.
+export const maxDuration = 30;
+
 export default async function AppLayout({
   children,
 }: {

@@ -14,4 +14,5 @@ export type SqlRunOutcome =
 export type RunOptions = {
   maxRows?: number;
   timeoutMs?: number;
+  bootTimeoutMs?: number;
 };

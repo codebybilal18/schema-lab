@@ -4,6 +4,11 @@ import type { RunOptions, SqlRunOutcome } from "./types";
 
 const DEFAULT_MAX_ROWS = 1000;
 const DEFAULT_TIMEOUT_MS = 5000;
+// Booting PGlite (compiling the Postgres wasm + running initdb + seeding) is a
+// one-off cold-start cost that is separate from the user's query. It is given
+// its own, more generous budget so a slow cold start is not mistaken for a
+// runaway query.
+const DEFAULT_BOOT_TIMEOUT_MS = 20000;
 
 // The worker runs an ephemeral in-memory Postgres (PGlite) instance from an
 // inline source string. All PGlite module resolution happens INSIDE this string,
@@ -23,6 +28,9 @@ const { createRequire } = require("node:module");
   const db = new PGlite();
   try {
     await db.exec(seedSql);
+    // Signal that boot + seeding is done so the parent can switch from the boot
+    // budget to the tighter per-query time limit.
+    parentPort.postMessage({ type: "ready" });
     const res = await db.query(query);
     const columns = res.fields.map((field) => field.name);
     const allRows = res.rows;
@@ -62,6 +70,7 @@ export function runSeededQuery(
 ): Promise<SqlRunOutcome> {
   const maxRows = options.maxRows ?? DEFAULT_MAX_ROWS;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const bootTimeoutMs = options.bootTimeoutMs ?? DEFAULT_BOOT_TIMEOUT_MS;
 
   return new Promise((resolve) => {
     const worker = new Worker(WORKER_SOURCE, {
@@ -70,6 +79,7 @@ export function runSeededQuery(
     });
 
     let settled = false;
+    let timer: ReturnType<typeof setTimeout>;
 
     const settle = (outcome: SqlRunOutcome) => {
       if (settled) return;
@@ -79,14 +89,31 @@ export function runSeededQuery(
       resolve(outcome);
     };
 
-    const timer = setTimeout(() => {
+    // While the database boots and seeds, the generous boot budget applies. Once
+    // the worker reports it is ready, swap to the tighter per-query limit.
+    timer = setTimeout(() => {
       settle({
         ok: false,
-        error: `Query exceeded the ${timeoutMs}ms time limit`,
+        error: `Database took too long to start (over ${bootTimeoutMs}ms)`,
       });
-    }, timeoutMs);
+    }, bootTimeoutMs);
 
-    worker.on("message", (message: SqlRunOutcome) => settle(message));
+    worker.on(
+      "message",
+      (message: SqlRunOutcome | { type: "ready" }) => {
+        if ("type" in message) {
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            settle({
+              ok: false,
+              error: `Query exceeded the ${timeoutMs}ms time limit`,
+            });
+          }, timeoutMs);
+          return;
+        }
+        settle(message);
+      },
+    );
     worker.on("error", (error) => settle({ ok: false, error: error.message }));
     worker.on("exit", () => {
       settle({ ok: false, error: "Query execution failed" });
