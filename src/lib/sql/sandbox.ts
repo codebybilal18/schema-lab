@@ -11,8 +11,10 @@ const DEFAULT_TIMEOUT_MS = 5000;
 // (so the package is actually shipped into the serverless function). The worker
 // below runs from an eval'd source string with no resolvable package root, so it
 // cannot resolve the bare "@electric-sql/pglite" specifier on its own.
-const require = createRequire(import.meta.url);
-const PGLITE_ENTRY = require.resolve("@electric-sql/pglite");
+// Named nodeRequire (not "require") on purpose: bundlers rewrite any literal
+// `require.resolve(...)` into a numeric module id, which the worker cannot load.
+const nodeRequire = createRequire(import.meta.url);
+const PGLITE_ENTRY = nodeRequire.resolve("@electric-sql/pglite");
 
 // The worker runs an ephemeral in-memory Postgres (PGlite) instance. It is
 // spawned from an inline source string so there is no separate file to resolve
